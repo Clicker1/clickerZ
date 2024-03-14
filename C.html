@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clicker Game with Upgrades</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+  }
+  #counter {
+    font-size: 36px;
+    margin-top: 50px;
+  }
+  #idleCounter {
+    font-size: 24px;
+    margin-top: 10px;
+    color: #888;
+  }
+  #clickButton {
+    font-size: 24px;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-top: 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+  }
+  .upgradeButton {
+    font-size: 18px;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-top: 10px;
+    background-color: #008CBA;
+    color: white;
+    border: none;
+    border-radius: 3px;
+  }
+  .insufficientFunds {
+    background-color: #FF0000;
+    transition: background-color 1s ease;
+  }
+  #popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #f1f1f1;
+    border: 1px solid #ccc;
+    padding: 20px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+  }
+  .close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>Clicker Game with Upgrades</h1>
+<p>Click the button to increase your click count!</p>
+<div>
+  <div id="counter">0</div>
+  <div id="idleCounter">Idle Income: 0 per second</div>
+  <button id="clickButton" onclick="incrementCounter()">Click Me!</button>
+</div>
+<div id="upgrades">
+  <h2>Click Upgrades</h2>
+  <button id="upgrade1" class="upgradeButton" onclick="buyUpgrade(1)">Speedy Clicker (+1 per click) (Cost: <span id="upgrade1Cost">10</span> clicks)</button>
+  <button id="upgrade2" class="upgradeButton" onclick="buyUpgrade(2)">Finger Strength (+5 per click) (Cost: <span id="upgrade2Cost">25</span> clicks)</button>
+  <button id="upgrade3" class="upgradeButton" onclick="buyUpgrade(3)">Turbo Tap (+10 per click) (Cost: <span id="upgrade3Cost">500</span> clicks)</button>
+  <button id="upgrade4" class="upgradeButton" onclick="buyUpgrade(4)">Hyper Click (+50 per click) (Cost: <span id="upgrade4Cost">1000</span> clicks)</button>
+  <button id="upgrade5" class="upgradeButton" onclick="buyUpgrade(5)">Mega Press (+100 per click) (Cost: <span id="upgrade5Cost">10000</span> clicks)</button>
+</div>
+<div id="idleUpgrades">
+  <h2>Idle Upgrades</h2>
+  <button id="idleUpgrade1" class="upgradeButton" onclick="buyIdleUpgrade(1)">Idle Clicker (+1 per second) (Cost: <span id="idleUpgrade1Cost">10</span> clicks)</button>
+  <button id="idleUpgrade2" class="upgradeButton" onclick="buyIdleUpgrade(2)">Idle Strength (+5 per second) (Cost: <span id="idleUpgrade2Cost">25</span> clicks)</button>
+  <button id="idleUpgrade3" class="upgradeButton" onclick="buyIdleUpgrade(3)">Auto Tap (+10 per second) (Cost: <span id="idleUpgrade3Cost">500</span> clicks)</button>
+  <button id="idleUpgrade4" class="upgradeButton" onclick="buyIdleUpgrade(4)">Hyper Press (+50 per second) (Cost: <span id="idleUpgrade4Cost">1000</span> clicks)</button>
+  <button id="idleUpgrade5" class="upgradeButton" onclick="buyIdleUpgrade(5)">Mega Tap (+100 per second) (Cost: <span id="idleUpgrade5Cost">10000</span> clicks)</button>
+</div>
+
+<div id="popup">
+  <span class="close" onclick="closePopup()">&times;</span>
+  <p>Enter the secret code to unlock:</p>
+  <input type="text" id="cheatInput">
+  <button onclick="applyCheat()">Apply</button>
+</div>
+
+<button onclick="openPopup()" style="position: fixed; top: 10px; right: 10px;">Shhhhh</button>
+<button onclick="resetGame()">Reset Game</button>
+
+<script>
+  let clickCount = 0;
+  let clickIncrement = 1;
+  let upgrade1Cost = 10;
+  let upgrade2Cost = 25;
+  let upgrade3Cost = 500;
+  let upgrade4Cost = 1000;
+  let upgrade5Cost = 10000;
+  let idleIncrement = 0;
+  let idle1Cost = 10;
+  let idle2Cost = 25;
+  let idle3Cost = 500;
+  let idle4Cost = 1000;
+  let idle5Cost = 10000;
+  let totalIdleIncome = 0;
+
+  const counterElement = document.getElementById('counter');
+  const idleCounterElement = document.getElementById('idleCounter');
+  const upgrade1Button = document.getElementById('upgrade1');
+  const upgrade2Button = document.getElementById('upgrade2');
+  const upgrade3Button = document.getElementById('upgrade3');
+  const upgrade4Button = document.getElementById('upgrade4');
+  const upgrade5Button = document.getElementById('upgrade5');
+  const upgrade1CostElement = document.getElementById('upgrade1Cost');
+  const upgrade2CostElement = document.getElementById('upgrade2Cost');
+  const upgrade3CostElement = document.getElementById('upgrade3Cost');
+  const upgrade4CostElement = document.getElementById('upgrade4Cost');
+  const upgrade5CostElement = document.getElementById('upgrade5Cost');
+
+  const idleUpgrade1Button = document.getElementById('idleUpgrade1');
+  const idleUpgrade2Button = document.getElementById('idleUpgrade2');
+  const idleUpgrade3Button = document.getElementById('idleUpgrade3');
+  const idleUpgrade4Button = document.getElementById('idleUpgrade4');
+  const idleUpgrade5Button = document.getElementById('idleUpgrade5');
+  const idleUpgrade1CostElement = document.getElementById('idleUpgrade1Cost');
+  const idleUpgrade2CostElement = document.getElementById('idleUpgrade2Cost');
+  const idleUpgrade3CostElement = document.getElementById('idleUpgrade3Cost');
+  const idleUpgrade4CostElement = document.getElementById('idleUpgrade4Cost');
+  const idleUpgrade5CostElement = document.getElementById('idleUpgrade5Cost');
+
+  function incrementCounter() {
+    clickCount += clickIncrement;
+    updateDisplay();
+  }
+
+  function buyUpgrade(upgradeNumber) {
+    let cost;
+    let upgradeButton;
+    switch (upgradeNumber) {
+      case 1:
+        cost = upgrade1Cost;
+        upgradeButton = upgrade1Button;
+        break;
+      case 2:
+        cost = upgrade2Cost;
+        upgradeButton = upgrade2Button;
+        break;
+      case 3:
+        cost = upgrade3Cost;
+        upgradeButton = upgrade3Button;
+        break;
+      case 4:
+        cost = upgrade4Cost;
+        upgradeButton = upgrade4Button;
+        break;
+      case 5:
+        cost = upgrade5Cost;
+        upgradeButton = upgrade5Button;
+        break;
+      default:
+        return;
+    }
+
+    if (clickCount >= cost) {
+      switch (upgradeNumber) {
+        case 1:
+          clickIncrement += 1;
+          break;
+        case 2:
+          clickIncrement += 5;
+          break;
+        case 3:
+          clickIncrement += 10;
+          break;
+        case 4:
+          clickIncrement += 50;
+          break;
+        case 5:
+          clickIncrement += 100;
+          break;
+      }
+      clickCount -= cost;
+      increaseUpgradeCost(upgradeNumber);
+      updateDisplay();
+      saveProgress();
+    } else {
+      upgradeButton.classList.add('insufficientFunds');
+      setTimeout(() => {
+        upgradeButton.classList.remove('insufficientFunds');
+      }, 1000);
+    }
+  }
+
+  function buyIdleUpgrade(upgradeNumber) {
+    let cost;
+    let idleUpgradeButton;
+    switch (upgradeNumber) {
+      case 1:
+        cost = idle1Cost;
+        idleUpgradeButton = idleUpgrade1Button;
+        break;
+      case 2:
+        cost = idle2Cost;
+        idleUpgradeButton = idleUpgrade2Button;
+        break;
+      case 3:
+        cost = idle3Cost;
+        idleUpgradeButton = idleUpgrade3Button;
+        break;
+      case 4:
+        cost = idle4Cost;
+        idleUpgradeButton = idleUpgrade4Button;
+        break;
+      case 5:
+        cost = idle5Cost;
+        idleUpgradeButton = idleUpgrade5Button;
+        break;
+      default:
+        return;
+    }
+
+    if (clickCount >= cost) {
+      switch (upgradeNumber) {
+        case 1:
+          idleIncrement += 1;
+          break;
+        case 2:
+          idleIncrement += 5;
+          break;
+        case 3:
+          idleIncrement += 10;
+          break;
+        case 4:
+          idleIncrement += 50;
+          break;
+        case 5:
+          idleIncrement += 100;
+          break;
+      }
+      clickCount -= cost;
+      increaseIdleUpgradeCost(upgradeNumber);
+      updateDisplay();
+      startIdleTimer();
+      saveProgress();
+    } else {
+      idleUpgradeButton.classList.add('insufficientFunds');
+      setTimeout(() => {
+        idleUpgradeButton.classList.remove('insufficientFunds');
+      }, 1000);
+    }
+  }
+
+  function increaseUpgradeCost(upgradeNumber) {
+    switch (upgradeNumber) {
+      case 1:
+        upgrade1Cost *= 2;
+        break;
+      case 2:
+        upgrade2Cost *= 2;
+        break;
+      case 3:
+        upgrade3Cost += 100;
+        break;
+      case 4:
+        upgrade4Cost += 500;
+        break;
+      case 5:
+        upgrade5Cost += 1000;
+        break;
+    }
+  }
+
+  function increaseIdleUpgradeCost(upgradeNumber) {
+    switch (upgradeNumber) {
+      case 1:
+        idle1Cost *= 2;
+        break;
+      case 2:
+        idle2Cost *= 2;
+        break;
+      case 3:
+        idle3Cost += 100;
+        break;
+      case 4:
+        idle4Cost += 500;
+        break;
+      case 5:
+        idle5Cost += 1000;
+        break;
+    }
+  }
+
+  function updateDisplay() {
+    counterElement.textContent = clickCount;
+    idleCounterElement.textContent = `Idle Income: ${idleIncrement} per second`;
+    upgrade1CostElement.textContent = upgrade1Cost;
+    upgrade2CostElement.textContent = upgrade2Cost;
+    upgrade3CostElement.textContent = upgrade3Cost;
+    upgrade4CostElement.textContent = upgrade4Cost;
+    upgrade5CostElement.textContent = upgrade5Cost;
+    idleUpgrade1CostElement.textContent = idle1Cost;
+    idleUpgrade2CostElement.textContent = idle2Cost;
+    idleUpgrade3CostElement.textContent = idle3Cost;
+    idleUpgrade4CostElement.textContent = idle4Cost;
+    idleUpgrade5CostElement.textContent = idle5Cost;
+  }
+
+  function startIdleTimer() {
+    setInterval(() => {
+      clickCount += idleIncrement;
+      totalIdleIncome += idleIncrement;
+      updateDisplay();
+      saveProgress();
+    }, 1000);
+  }
+
+  function openPopup() {
+    document.getElementById("popup").style.display = "block";
+  }
+
+  function closePopup() {
+    document.getElementById("popup").style.display = "none";
+  }
+
+  function applyCheat() {
+    const cheatInput = document.getElementById("cheatInput").value;
+    if (cheatInput === "zakdev") {
+      clickCount += 1000000;
+      updateDisplay();
+      closePopup();
+      saveProgress();
+    }
+  }
+
+  function resetGame() {
+    const confirmation = confirm("Are you sure you want to reset the game?");
+    if (confirmation) {
+      clickCount = 0;
+      clickIncrement = 1;
+      upgrade1Cost = 10;
+      upgrade2Cost = 25;
+      upgrade3Cost = 500;
+      upgrade4Cost = 1000;
+      upgrade5Cost = 10000;
+      idleIncrement = 0;
+      idle1Cost = 10;
+      idle2Cost = 25;
+      idle3Cost = 500;
+      idle4Cost = 1000;
+      idle5Cost = 10000;
+      totalIdleIncome = 0;
+      localStorage.removeItem("clickerGameSave");
+      location.reload();
+    }
+  }
+
+  function saveProgress() {
+    const data = {
+      clickCount: clickCount,
+      clickIncrement: clickIncrement,
+      upgrade1Cost: upgrade1Cost,
+      upgrade2Cost: upgrade2Cost,
+      upgrade3Cost: upgrade3Cost,
+      upgrade4Cost: upgrade4Cost,
+      upgrade5Cost: upgrade5Cost,
+      idleIncrement: idleIncrement,
+      idle1Cost: idle1Cost,
+      idle2Cost: idle2Cost,
+      idle3Cost: idle3Cost,
+      idle4Cost: idle4Cost,
+      idle5Cost: idle5Cost,
+      totalIdleIncome: totalIdleIncome
+    };
+    localStorage.setItem("clickerGameSave", JSON.stringify(data));
+  }
+
+  function loadProgress() {
+    const data = localStorage.getItem("clickerGameSave");
+    if (data) {
+      const savedData = JSON.parse(data);
+      clickCount = savedData.clickCount;
+      clickIncrement = savedData.clickIncrement;
+      upgrade1Cost = savedData.upgrade1Cost;
+      upgrade2Cost = savedData.upgrade2Cost;
+      upgrade3Cost = savedData.upgrade3Cost;
+      upgrade4Cost = savedData.upgrade4Cost;
+      upgrade5Cost = savedData.upgrade5Cost;
+      idleIncrement = savedData.idleIncrement;
+      idle1Cost = savedData.idle1Cost;
+      idle2Cost = savedData.idle2Cost;
+      idle3Cost = savedData.idle3Cost;
+      idle4Cost = savedData.idle4Cost;
+      idle5Cost = savedData.idle5Cost;
+      totalIdleIncome = savedData.totalIdleIncome;
+      updateDisplay();
+      startIdleTimer();
+    }
+  }
+
+  loadProgress(); // Load progress when the page loads
+
+</script>
+
+</body>
+</html>
